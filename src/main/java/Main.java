@@ -33,14 +33,29 @@ public class Main {
 
 
         Set<String> ordered_vocabulary = new HashSet<>();
-        ordered_vocabulary = orderVocabularyByCount(vocabulary, vocab_count);
+        ordered_vocabulary = reOrderVocabularyByCount(vocabulary, vocab_count);
 
         vocab_count = new HashMap<>();
         countVocabulary(tokenizedText, vocab_count, ordered_vocabulary);
 
-        ordered_vocabulary = orderVocabularyByCount(vocabulary, vocab_count);
+        ordered_vocabulary = reOrderVocabularyByCount(vocabulary, vocab_count);
 
-        
+        pair_count = countPairs(tokenizedText, vocab_count);
+        System.out.println("");
+    }
+
+    private static Map<String, Integer> countPairs(List<String> tokenizedText, Map<String, Integer> vocab_count) {
+        Map<String, Integer> pair_count = new HashMap<>();
+        tokenizedText.stream().forEach(word -> {
+            String[] splitWord = word.split(" ");
+            for(int i=0;i<splitWord.length-1;i++) {
+                String key = String.format("%s %s ", splitWord[i], splitWord[i+1]);
+                pair_count.put(key,
+                        pair_count.getOrDefault(key, 0) + vocab_count.get(splitWord[i] + " ")
+                        + vocab_count.get(splitWord[i+1] + " "));
+            }
+        });
+        return pair_count;
     }
 
     private static void addToVocabularyFromText(String doc_gpt, Set<String> vocabulary) {
@@ -60,7 +75,7 @@ public class Main {
         });
     }
 
-    private static Set<String> orderVocabularyByCount(Set<String> vocabulary, Map<String, Integer> vocab_count) {
+    private static Set<String> reOrderVocabularyByCount(Set<String> vocabulary, Map<String, Integer> vocab_count) {
         Set<String> ordered_vocabulary = new TreeSet<>(
                 (a,b) ->  {
                     int diff = vocab_count.getOrDefault(b,0) - vocab_count.getOrDefault(a, 0);
