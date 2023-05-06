@@ -16,7 +16,7 @@ public class Main {
                 IntStream.range('a', 'z'+1).boxed(),
                 IntStream.range('A', 'Z'+1).boxed()
         ).reduce(Stream::concat).get()
-                .map(c -> Character.toString(c))
+                .map(c -> Character.toString(c)+" ")
                 .collect(Collectors.toSet());
 
         addToVocabularyFromText(doc_gpt, vocabulary);
@@ -32,14 +32,14 @@ public class Main {
 
 
         Set<String> ordered_vocabulary = new HashSet<>();
-        orderVocabulary(ordered_vocabulary, vocabulary, vocab_count);
+        ordered_vocabulary = orderVocabularyByCount(vocabulary, vocab_count);
 
         vocab_count = new HashMap<>();
         countVocabulary(tokenizedText, vocab_count, ordered_vocabulary);
     }
 
     private static void addToVocabularyFromText(String doc_gpt, Set<String> vocabulary) {
-        doc_gpt.chars().filter(c -> !vocabulary.contains(c)).forEach(c -> vocabulary.add(Character.toString(c)));
+        doc_gpt.chars().filter(c -> !vocabulary.contains(c)).forEach(c -> vocabulary.add(Character.toString(c) + " "));
     }
 
     private static void countVocabulary(List<String> tokenizedText, Map<String, Integer> vocab_count, Set<String> ordered_vocabulary) {
@@ -55,7 +55,9 @@ public class Main {
         });
     }
 
-    private static void orderVocabulary(Set<String> ordered_vocabulary, Set<String> vocabulary, Map<String, Integer> vocab_count) {
+    private static Set<String> orderVocabularyByCount(Set<String> vocabulary, Map<String, Integer> vocab_count) {
+        Set<String> ordered_vocabulary = new HashSet<>();
+
         //order vocabulary by decreasing vocab count
         PriorityQueue<String> pq = new PriorityQueue<>(
                 (a,b) -> vocab_count.getOrDefault(b,0) - vocab_count.getOrDefault(a, 0)
@@ -66,6 +68,7 @@ public class Main {
                 .forEach(s -> pq.add(s));
 
         pq.stream().forEach(str -> ordered_vocabulary.add(str));
+        return ordered_vocabulary;
     }
 
     private static List<String> get_tokenized_text(String doc_gpt) {
