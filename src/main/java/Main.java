@@ -12,6 +12,7 @@ public class Main {
     public static void main(String[] args) {
         List<String> tokenizedText = get_tokenized_text(doc_gpt);
 
+        //Alphabets
         Set<String> vocabulary = Stream.of(
                 IntStream.range('a', 'z'+1).boxed(),
                 IntStream.range('A', 'Z'+1).boxed()
@@ -36,6 +37,10 @@ public class Main {
 
         vocab_count = new HashMap<>();
         countVocabulary(tokenizedText, vocab_count, ordered_vocabulary);
+
+        ordered_vocabulary = orderVocabularyByCount(vocabulary, vocab_count);
+
+        
     }
 
     private static void addToVocabularyFromText(String doc_gpt, Set<String> vocabulary) {
@@ -56,18 +61,22 @@ public class Main {
     }
 
     private static Set<String> orderVocabularyByCount(Set<String> vocabulary, Map<String, Integer> vocab_count) {
-        Set<String> ordered_vocabulary = new HashSet<>();
-
-        //order vocabulary by decreasing vocab count
-        PriorityQueue<String> pq = new PriorityQueue<>(
-                (a,b) -> vocab_count.getOrDefault(b,0) - vocab_count.getOrDefault(a, 0)
+        Set<String> ordered_vocabulary = new TreeSet<>(
+                (a,b) ->  {
+                    int diff = vocab_count.getOrDefault(b,0) - vocab_count.getOrDefault(a, 0);
+                    if(diff == 0) {
+                        return b.compareTo(a);
+                    } else {
+                        return diff;
+                    }
+                }
         );
 
+        //order vocabulary by decreasing vocab count
         vocabulary
-                .stream()
-                .forEach(s -> pq.add(s));
+            .stream()
+            .forEach(s -> ordered_vocabulary.add(s));
 
-        pq.stream().forEach(str -> ordered_vocabulary.add(str));
         return ordered_vocabulary;
     }
 
@@ -81,6 +90,16 @@ public class Main {
         pipeline.annotate(doc);
 
         return doc.tokens().parallelStream()
-                .map(tok -> tok.word()).collect(Collectors.toList());
+                .map(tok -> tok.word())
+                .map(aword -> {
+                    StringBuilder spacedWord = new StringBuilder();
+
+                    for(char c : aword.toCharArray()) {
+                        spacedWord.append(c).append(" ");
+                    }
+
+                    return spacedWord.toString();
+                })
+                .collect(Collectors.toList());
     }
 }
