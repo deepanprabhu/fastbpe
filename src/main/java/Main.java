@@ -2,6 +2,8 @@ import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -22,14 +24,12 @@ public class Main {
 
         addToVocabularyFromText(doc_gpt, vocabulary);
 
+        Map<String, Integer> pair_count;
         Map<String, Integer> word_count = new HashMap<>();
-        Map<String, Integer> pair_count = new HashMap<>();
         Map<String, Integer> vocab_count = new HashMap<>();
 
         //word count
-        tokenizedText
-                .stream()
-                .forEach(w -> word_count.put(w, 1 + word_count.getOrDefault(w, 0)));
+        updateTokenTextWordCount(tokenizedText, word_count);
 
 
         Set<String> ordered_vocabulary = new HashSet<>();
@@ -42,6 +42,47 @@ public class Main {
 
         List<String> topPair = new ArrayList<>();
         pair_count = countPairs(tokenizedText, vocab_count, topPair);
+
+        mergePairInVocabulary(tokenizedText, topPair, word_count, vocab_count, pair_count);
+    }
+
+    private static void updateTokenTextWordCount(List<String> tokenizedText, Map<String, Integer> word_count) {
+        word_count.clear();
+        tokenizedText
+                .stream()
+                .forEach(w -> word_count.put(w, 1 + word_count.getOrDefault(w, 0)));
+    }
+
+    private static void mergePairInVocabulary(List<String> tokenizedText, List<String> topPair,
+                                              Map<String, Integer> word_count,
+                                              Map<String, Integer> vocab_count,
+                                              Map<String, Integer> pair_count) {
+
+        String pair1 = topPair.get(0).split(" ")[0];
+        String pair2 = topPair.get(1).split(" ")[0];
+        String unMergedPair = String.format("%s %s ", pair1, pair2);
+        String mergedPair = String.format("%s%s ", pair1, pair2);
+
+        for (int i = 0; i < tokenizedText.size(); i++) {
+            if (tokenizedText.get(i).contains(unMergedPair)) {
+
+                //get count of replacements
+                Pattern mergedPattern = Pattern.compile(unMergedPair);
+                Matcher mergedMatcher = mergedPattern.matcher(tokenizedText.get(i));
+
+                int replacementCount = (int) mergedMatcher.results().count();
+
+                pair_count.remove(unMergedPair);
+
+                String replacedToken = tokenizedText.get(i).replaceAll(unMergedPair, mergedPair);
+                word_count.put(replacedToken, 1 + word_count.getOrDefault(replacedToken, 0));
+
+                word_count.remove(word_count.get(tokenizedText.get(i)));
+                tokenizedText.set(i, replacedToken);
+
+                vocab_count.put(mergedPair, vocab_count.getOrDefault(mergedPair, 0) + replacementCount);
+            }
+        }
     }
 
     private static Map<String, Integer> countPairs(List<String> tokenizedText, Map<String, Integer> vocab_count,
