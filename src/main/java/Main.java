@@ -40,10 +40,14 @@ public class Main {
 
         ordered_vocabulary = reOrderVocabularyByCount(vocabulary, vocab_count);
 
-        List<String> topPair = new ArrayList<>();
-        pair_count = countPairs(tokenizedText, vocab_count, topPair);
-
-        mergePairInVocabulary(tokenizedText, topPair, word_count, vocab_count, pair_count);
+        int numMerges = 20;
+        while(numMerges-- > 0) {
+            List<String> topPair = new ArrayList<>();
+            pair_count = countPairs(tokenizedText, vocab_count, topPair);
+            System.out.println("topPair " + topPair.get(0) + " " + topPair.get(1));
+            mergePairInVocabulary(tokenizedText, topPair, word_count, vocab_count, pair_count);
+        }
+        System.out.println("");
     }
 
     private static void updateTokenTextWordCount(List<String> tokenizedText, Map<String, Integer> word_count) {
@@ -93,6 +97,7 @@ public class Main {
         int maxPair = Integer.MIN_VALUE;
 
         for (String word : tokenizedText) {
+            System.out.println(word);
             String[] splitWord = word.split(" ");
 
             for (int i = 0; i < splitWord.length - 1; i++) {
