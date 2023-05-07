@@ -14,10 +14,10 @@ public class Main {
 
         //Alphabets
         Set<String> vocabulary = Stream.of(
-                IntStream.range('a', 'z'+1).boxed(),
-                IntStream.range('A', 'Z'+1).boxed()
-        ).reduce(Stream::concat).get()
-                .map(c -> Character.toString(c)+" ")
+                        IntStream.range('a', 'z' + 1).boxed(),
+                        IntStream.range('A', 'Z' + 1).boxed()
+                ).reduce(Stream::concat).get()
+                .map(c -> Character.toString(c) + " ")
                 .collect(Collectors.toSet());
 
         addToVocabularyFromText(doc_gpt, vocabulary);
@@ -40,21 +40,39 @@ public class Main {
 
         ordered_vocabulary = reOrderVocabularyByCount(vocabulary, vocab_count);
 
-        pair_count = countPairs(tokenizedText, vocab_count);
-        System.out.println("");
+        List<String> topPair = new ArrayList<>();
+        pair_count = countPairs(tokenizedText, vocab_count, topPair);
     }
 
-    private static Map<String, Integer> countPairs(List<String> tokenizedText, Map<String, Integer> vocab_count) {
+    private static Map<String, Integer> countPairs(List<String> tokenizedText, Map<String, Integer> vocab_count,
+                                                   List<String> topPair) {
         Map<String, Integer> pair_count = new HashMap<>();
-        tokenizedText.stream().forEach(word -> {
+
+
+        int maxPair = Integer.MIN_VALUE;
+
+        for (String word : tokenizedText) {
             String[] splitWord = word.split(" ");
-            for(int i=0;i<splitWord.length-1;i++) {
-                String key = String.format("%s %s ", splitWord[i], splitWord[i+1]);
+
+            for (int i = 0; i < splitWord.length - 1; i++) {
+                String key = String.format("%s %s ", splitWord[i], splitWord[i + 1]);
+
                 pair_count.put(key,
-                        pair_count.getOrDefault(key, 0) + vocab_count.get(splitWord[i] + " ")
-                        + vocab_count.get(splitWord[i+1] + " "));
+                        pair_count.getOrDefault(key, 0)
+                                + vocab_count.get(splitWord[i] + " ")
+                                + vocab_count.get(splitWord[i + 1] + " ")
+                );
+
+                if (pair_count.get(key) > maxPair) {
+                    maxPair = pair_count.get(key);
+                    topPair.clear();
+                    topPair.add(splitWord[i] + " ");
+                    topPair.add(splitWord[i + 1] + " ");
+                }
             }
-        });
+        }
+        ;
+
         return pair_count;
     }
 
@@ -67,9 +85,9 @@ public class Main {
             String tw = String.copyValueOf(w.toCharArray());
 
             ordered_vocabulary.stream().forEach(ov -> {
-                if(tw.contains(ov)) {
-                    vocab_count.put(ov, 1+ vocab_count.getOrDefault(ov, 0));
-                    tw.replace(ov,"");
+                if (tw.contains(ov)) {
+                    vocab_count.put(ov, 1 + vocab_count.getOrDefault(ov, 0));
+                    tw.replace(ov, "");
                 }
             });
         });
@@ -77,9 +95,9 @@ public class Main {
 
     private static Set<String> reOrderVocabularyByCount(Set<String> vocabulary, Map<String, Integer> vocab_count) {
         Set<String> ordered_vocabulary = new TreeSet<>(
-                (a,b) ->  {
-                    int diff = vocab_count.getOrDefault(b,0) - vocab_count.getOrDefault(a, 0);
-                    if(diff == 0) {
+                (a, b) -> {
+                    int diff = vocab_count.getOrDefault(b, 0) - vocab_count.getOrDefault(a, 0);
+                    if (diff == 0) {
                         return b.compareTo(a);
                     } else {
                         return diff;
@@ -89,8 +107,8 @@ public class Main {
 
         //order vocabulary by decreasing vocab count
         vocabulary
-            .stream()
-            .forEach(s -> ordered_vocabulary.add(s));
+                .stream()
+                .forEach(s -> ordered_vocabulary.add(s));
 
         return ordered_vocabulary;
     }
@@ -109,7 +127,7 @@ public class Main {
                 .map(aword -> {
                     StringBuilder spacedWord = new StringBuilder();
 
-                    for(char c : aword.toCharArray()) {
+                    for (char c : aword.toCharArray()) {
                         spacedWord.append(c).append(" ");
                     }
 
