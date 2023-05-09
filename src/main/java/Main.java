@@ -21,6 +21,7 @@ public class Main {
         Map<String, Integer> vocab_count = new HashMap<>();
         Set<String> ordered_vocabulary;
         List<String> topPair;
+        List<String> wordsWithSpace;
 
         //Alphabets
         Set<String> vocabulary = Stream.of(
@@ -31,7 +32,7 @@ public class Main {
                 .collect(Collectors.toSet());
 
 
-        List<String> wordsWithSpace = getTokenizedWordsWithSpace(doc_gpt);
+        wordsWithSpace = getTokenizedWordsWithSpace(doc_gpt);
 
         addVocabFromText(doc_gpt, vocabulary);
 
@@ -45,6 +46,7 @@ public class Main {
         ordered_vocabulary = reOrderVocabularyByCount(vocabulary, vocab_count);
 
         int numMerges = 100;
+
         while(numMerges-- > 0) {
             topPair = new ArrayList<>();
             pair_count = countPairsAndFindBest(wordsWithSpace, word_count, topPair);
