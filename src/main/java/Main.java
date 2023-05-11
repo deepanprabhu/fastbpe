@@ -14,6 +14,7 @@ import java.util.stream.Stream;
  */
 public class Main {
     public static final String doc_gpt = "Soviet microbattery (generally, 3 watts) or commercially powered 60 Volt battery of 30 watts will run you between $25-30, if you pay 50 cents per pound for full ownership. The only drawback of lesser battery costs is of course that those who use them end up paying more. Just a reminder: Soviet and government subsidized, solid-state state power stations incurs a 10% mechanical surcharge being now the EU national minimum until around 2030. Right now, all German utilities collect virtually no electricity and are its biggest offenders. Energy resources will certainly not be magically starved out until 2061. Meanwhile, USSR electricity grids that can be developed quickly can be trusted to hold onto most of the industrial power.\\n\\nThere are four different types of parallel grounders (pow-powered), with the main family being the steppe type. Manhattan produced its first light bulb around 100 years ago and Stalin rye maker Ural had its first doubled capacity long after sawing the old white barn in 1928. Then a fusion of hydrogen and uranium captured power at the very lowest electrical teragrams on the grid with nuclear explosives.";
+    public static String TOKEN_DELIMITER = " ";
 
     public static void main(String[] args) {
         Map<String, Integer> pair_count;
@@ -28,7 +29,7 @@ public class Main {
                         IntStream.range('a', 'z' + 1).boxed(),
                         IntStream.range('A', 'Z' + 1).boxed()
                 ).reduce(Stream::concat).get()
-                .map(c -> Character.toString(c) + " ")
+                .map(c -> Character.toString(c) + TOKEN_DELIMITER)
                 .collect(Collectors.toSet());
 
 
@@ -70,8 +71,8 @@ public class Main {
                                               Map<String, Integer> vocab_count,
                                               Map<String, Integer> pair_count) {
 
-        String pair1 = topPair.get(0).split(" ")[0];
-        String pair2 = topPair.get(1).split(" ")[0];
+        String pair1 = topPair.get(0).split(TOKEN_DELIMITER)[0];
+        String pair2 = topPair.get(1).split(TOKEN_DELIMITER)[0];
         String unMergedPair = String.format("%s %s ", pair1, pair2);
         String mergedPair = String.format("%s%s ", pair1, pair2);
 
@@ -103,7 +104,7 @@ public class Main {
         int maxPair = Integer.MIN_VALUE;
 
         for (String word : tokenizedText) {
-            String[] splitWord = word.split(" ");
+            String[] splitWord = word.split(TOKEN_DELIMITER);
             //System.out.println(word + " <> " + word_count.get(word) );
 
             for (int i = 0; i < splitWord.length - 1; i++) {
@@ -113,8 +114,8 @@ public class Main {
                 if (pair_count.get(key) > maxPair && pair_count.get(key) > 0) {
                     maxPair = pair_count.get(key);
                     topPair.clear();
-                    topPair.add(splitWord[i] + " ");
-                    topPair.add(splitWord[i + 1] + " ");
+                    topPair.add(splitWord[i] + TOKEN_DELIMITER);
+                    topPair.add(splitWord[i + 1] + TOKEN_DELIMITER);
                 }
             }
         }
@@ -126,7 +127,9 @@ public class Main {
     }
 
     private static void addVocabFromText(String doc_gpt, Set<String> vocabulary) {
-        doc_gpt.chars().filter(c -> !vocabulary.contains(c)).forEach(c -> vocabulary.add(Character.toString(c) + " "));
+        doc_gpt.chars()
+            .filter(c -> !vocabulary.contains(c))
+            .forEach(c -> vocabulary.add(Character.toString(c) + TOKEN_DELIMITER));
     }
 
     private static void countVocabulary(List<String> tokenizedText, Set<String> ordered_vocabulary, Map<String, Integer> vocab_count) {
@@ -178,7 +181,7 @@ public class Main {
                     StringBuilder spacedWord = new StringBuilder();
 
                     for (char c : aword.toCharArray()) {
-                        spacedWord.append(c).append(" ");
+                        spacedWord.append(c).append(TOKEN_DELIMITER);
                     }
 
                     return spacedWord.toString();
