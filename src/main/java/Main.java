@@ -54,7 +54,7 @@ public class Main {
         //word count
         calculateWordCount(wordsWithSpace, word_count);
 
-        countVocabulary(wordsWithSpace, vocabulary, vocab_count);
+        //countVocabulary(wordsWithSpace, vocabulary, vocab_count);
 
         int numMerges = 500;
 
@@ -63,12 +63,12 @@ public class Main {
             pair_count = countPairsAndFindBest(wordsWithSpace, word_count, topPair);
 
             if(topPair.size() > 0) {
-                mergePairInVocabulary(wordsWithSpace, topPair, vocabulary, word_count, vocab_count, pair_count);
-                countVocabulary(wordsWithSpace, vocabulary, vocab_count);
+                mergePairInVocabulary(wordsWithSpace, topPair, vocabulary, word_count, pair_count);
+                //countVocabulary(wordsWithSpace, vocabulary, vocab_count);
             }
         }
 
-        ordered_vocabulary = reOrderVocabularyByLength(vocabulary, vocab_count);
+        ordered_vocabulary = reOrderVocabularyByLength(vocabulary);
         tokenizeText("New soviet powered commercial micro battery", ordered_vocabulary);
     }
 
@@ -109,7 +109,6 @@ public class Main {
     private static void mergePairInVocabulary(List<String> tokenizedText, List<String> topPair,
                                               Set<String> vocabulary,
                                               Map<String, Integer> word_count,
-                                              Map<String, Integer> vocab_count,
                                               Map<String, Integer> pair_count) {
 
         String pair1 = topPair.get(0).split(TOKEN_DELIMITER)[0];
@@ -135,7 +134,6 @@ public class Main {
                 tokenizedText.set(i, replacedToken);
 
                 vocabulary.add(mergedPair);
-                vocab_count.put(mergedPair, vocab_count.getOrDefault(mergedPair, 0) + replacementCount);
             }
         }
     }
@@ -209,7 +207,7 @@ public class Main {
         return ordered_vocabulary;
     }
 
-    private static Set<String> reOrderVocabularyByLength(Set<String> vocabulary, Map<String, Integer> vocab_count) {
+    private static Set<String> reOrderVocabularyByLength(Set<String> vocabulary) {
         List<String> ordered_vocabulary = new ArrayList<>(vocabulary);
         Collections.sort(ordered_vocabulary, (a,b) -> Integer.compare(b.length(), a.length()));
         return new HashSet<>(ordered_vocabulary);
