@@ -1,6 +1,10 @@
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,9 +17,19 @@ import java.util.stream.Stream;
  * vocabulary are individual chars from words
  */
 public class Main {
-    public static final String doc_gpt = "Soviet microbattery (generally, 3 watts) or commercially powered 60 Volt battery of 30 watts will run you between $25-30, if you pay 50 cents per pound for full ownership. The only drawback of lesser battery costs is of course that those who use them end up paying more. Just a reminder: Soviet and government subsidized, solid-state state power stations incurs a 10% mechanical surcharge being now the EU national minimum until around 2030. Right now, all German utilities collect virtually no electricity and are its biggest offenders. Energy resources will certainly not be magically starved out until 2061. Meanwhile, USSR electricity grids that can be developed quickly can be trusted to hold onto most of the industrial power.\\n\\nThere are four different types of parallel grounders (pow-powered), with the main family being the steppe type. Manhattan produced its first light bulb around 100 years ago and Stalin rye maker Ural had its first doubled capacity long after sawing the old white barn in 1928. Then a fusion of hydrogen and uranium captured power at the very lowest electrical teragrams on the grid with nuclear explosives.";
+    //public static final String doc_gpt = "Soviet microbattery (generally, 3 watts) or commercially powered 60 Volt battery of 30 watts will run you between $25-30, if you pay 50 cents per pound for full ownership. The only drawback of lesser battery costs is of course that those who use them end up paying more. Just a reminder: Soviet and government subsidized, solid-state state power stations incurs a 10% mechanical surcharge being now the EU national minimum until around 2030. Right now, all German utilities collect virtually no electricity and are its biggest offenders. Energy resources will certainly not be magically starved out until 2061. Meanwhile, USSR electricity grids that can be developed quickly can be trusted to hold onto most of the industrial power.\\n\\nThere are four different types of parallel grounders (pow-powered), with the main family being the steppe type. Manhattan produced its first light bulb around 100 years ago and Stalin rye maker Ural had its first doubled capacity long after sawing the old white barn in 1928. Then a fusion of hydrogen and uranium captured power at the very lowest electrical teragrams on the grid with nuclear explosives.";
+    public static final String doc_gpt = loadText();
     public static String TOKEN_DELIMITER = " ";
 
+    public static String loadText() {
+        try {
+            return Files.readString(
+                    Path.of(Main.class.getClassLoader().getResource("pg16457.txt").toURI())
+            );
+        } catch (Exception exception){
+        }
+        return "";
+    }
     public static void main(String[] args) {
         Map<String, Integer> pair_count;
         Map<String, Integer> word_count = new HashMap<>();
@@ -40,23 +54,49 @@ public class Main {
         //word count
         calculateWordCount(wordsWithSpace, word_count);
 
-        ordered_vocabulary = reOrderVocabularyByCount(vocabulary, vocab_count);
+        countVocabulary(wordsWithSpace, vocabulary, vocab_count);
 
-        //count and reorder
-        countVocabulary(wordsWithSpace, ordered_vocabulary, vocab_count);
-        ordered_vocabulary = reOrderVocabularyByCount(vocabulary, vocab_count);
-
-        int numMerges = 100;
+        int numMerges = 500;
 
         while(numMerges-- > 0) {
             topPair = new ArrayList<>();
             pair_count = countPairsAndFindBest(wordsWithSpace, word_count, topPair);
 
             if(topPair.size() > 0) {
-                mergePairInVocabulary(wordsWithSpace, topPair, word_count, vocab_count, pair_count);
-                countVocabulary(wordsWithSpace, ordered_vocabulary, vocab_count);
+                mergePairInVocabulary(wordsWithSpace, topPair, vocabulary, word_count, vocab_count, pair_count);
+                countVocabulary(wordsWithSpace, vocabulary, vocab_count);
             }
         }
+
+        ordered_vocabulary = reOrderVocabularyByLength(vocabulary, vocab_count);
+        tokenizeText("New soviet powered commercial micro battery", ordered_vocabulary);
+    }
+
+    private static List<String> tokenizeText(String text, Set<String> ordered_vocabulary) {
+        List<String> tokenizedText = new ArrayList<>();
+        StringBuilder delimitingString = new StringBuilder();
+        text
+            .chars()
+            .mapToObj(c -> (char)c)
+            .forEach(c-> delimitingString.append(c).append(TOKEN_DELIMITER));
+
+        String delimitedString = new String(text);
+
+        for(String vocab : ordered_vocabulary) {
+            if(delimitedString.contains(vocab)){
+                System.out.println(String.format("replacing %s", vocab));
+                Pattern mergedPattern = Pattern.compile(vocab);
+                Matcher mergedMatcher = mergedPattern.matcher(delimitedString);
+
+                int replacementCount = (int) mergedMatcher.results().count();
+                IntStream.range(0, replacementCount).forEach(i -> tokenizedText.add(vocab));
+                delimitedString = delimitedString.replace(vocab, "");
+            }
+        };
+        for(String s : tokenizedText) {
+            System.out.print(s + " ");
+        }
+        return tokenizedText;
     }
 
     private static void calculateWordCount(List<String> tokenizedText, Map<String, Integer> word_count) {
@@ -67,6 +107,7 @@ public class Main {
     }
 
     private static void mergePairInVocabulary(List<String> tokenizedText, List<String> topPair,
+                                              Set<String> vocabulary,
                                               Map<String, Integer> word_count,
                                               Map<String, Integer> vocab_count,
                                               Map<String, Integer> pair_count) {
@@ -93,6 +134,7 @@ public class Main {
                 word_count.remove(word_count.get(tokenizedText.get(i)));
                 tokenizedText.set(i, replacedToken);
 
+                vocabulary.add(mergedPair);
                 vocab_count.put(mergedPair, vocab_count.getOrDefault(mergedPair, 0) + replacementCount);
             }
         }
@@ -120,9 +162,10 @@ public class Main {
             }
         }
 
-        if(topPair.size() > 0)
-            System.out.println(String.format("Top pair - <>%s<>%s - %d", topPair.get(0),
-                topPair.get(1), pair_count.get(topPair.get(0)+topPair.get(1))));
+        if(topPair.size() > 0) {
+            //System.out.println(String.format("Top pair - <>%s<>%s - %d", topPair.get(0),
+            //        topPair.get(1), pair_count.get(topPair.get(0) + topPair.get(1))));
+        }
         return pair_count;
     }
 
@@ -164,6 +207,12 @@ public class Main {
                 .forEach(s -> ordered_vocabulary.add(s));
 
         return ordered_vocabulary;
+    }
+
+    private static Set<String> reOrderVocabularyByLength(Set<String> vocabulary, Map<String, Integer> vocab_count) {
+        List<String> ordered_vocabulary = new ArrayList<>(vocabulary);
+        Collections.sort(ordered_vocabulary, (a,b) -> Integer.compare(b.length(), a.length()));
+        return new HashSet<>(ordered_vocabulary);
     }
 
     private static List<String> getTokenizedWordsWithSpace(String doc_gpt) {
