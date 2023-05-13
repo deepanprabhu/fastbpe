@@ -1,8 +1,6 @@
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 
-import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -33,7 +31,6 @@ public class Main {
     public static void main(String[] args) {
         Map<String, Integer> pair_count;
         Map<String, Integer> word_count = new HashMap<>();
-        Map<String, Integer> vocab_count = new HashMap<>();
         Set<String> ordered_vocabulary;
         List<String> topPair;
         List<String> wordsWithSpace;
@@ -51,20 +48,14 @@ public class Main {
 
         addVocabFromText(doc_gpt, vocabulary);
 
-        //word count
-        calculateWordCount(wordsWithSpace, word_count);
-
-        //countVocabulary(wordsWithSpace, vocabulary, vocab_count);
-
         int numMerges = 500;
 
         while(numMerges-- > 0) {
             topPair = new ArrayList<>();
-            pair_count = countPairsAndFindBest(wordsWithSpace, word_count, topPair);
+            pair_count = countPairsAndFindBest(wordsWithSpace, topPair);
 
             if(topPair.size() > 0) {
                 mergePairInVocabulary(wordsWithSpace, topPair, vocabulary, word_count, pair_count);
-                //countVocabulary(wordsWithSpace, vocabulary, vocab_count);
             }
         }
 
@@ -82,6 +73,7 @@ public class Main {
 
         String delimitedString = new String(text);
 
+        int index = 0;
         for(String vocab : ordered_vocabulary) {
             if(delimitedString.contains(vocab)){
                 System.out.println(String.format("replacing %s", vocab));
@@ -89,13 +81,11 @@ public class Main {
                 Matcher mergedMatcher = mergedPattern.matcher(delimitedString);
 
                 int replacementCount = (int) mergedMatcher.results().count();
-                IntStream.range(0, replacementCount).forEach(i -> tokenizedText.add(vocab));
-                delimitedString = delimitedString.replace(vocab, "");
+                delimitedString = delimitedString.replace(vocab, String.format("<<%d>>", index));
             }
+            index++;
         };
-        for(String s : tokenizedText) {
-            System.out.print(s + " ");
-        }
+        System.out.println(delimitedString);
         return tokenizedText;
     }
 
@@ -111,8 +101,8 @@ public class Main {
                                               Map<String, Integer> word_count,
                                               Map<String, Integer> pair_count) {
 
-        String pair1 = topPair.get(0).split(TOKEN_DELIMITER)[0];
-        String pair2 = topPair.get(1).split(TOKEN_DELIMITER)[0];
+        String pair1 = topPair.get(0);
+        String pair2 = topPair.get(1);
         String unMergedPair = String.format("%s %s ", pair1, pair2);
         String mergedPair = String.format("%s%s ", pair1, pair2);
 
@@ -138,31 +128,29 @@ public class Main {
         }
     }
 
-    private static Map<String, Integer> countPairsAndFindBest(List<String> tokenizedText, Map<String, Integer> word_count,
+    private static Map<String, Integer> countPairsAndFindBest(List<String> tokenizedText,
                                                               List<String> topPair) {
         Map<String, Integer> pair_count = new HashMap<>();
         int maxPair = Integer.MIN_VALUE;
 
         for (String word : tokenizedText) {
             String[] splitWord = word.split(TOKEN_DELIMITER);
-            //System.out.println(word + " <> " + word_count.get(word) );
 
             for (int i = 0; i < splitWord.length - 1; i++) {
-                String key = String.format("%s %s ", splitWord[i], splitWord[i + 1]);
+                String key = String.format("%s%s ", splitWord[i], splitWord[i + 1]);
                 pair_count.put(key, pair_count.getOrDefault(key, 0) + 1);
 
                 if (pair_count.get(key) > maxPair && pair_count.get(key) > 0) {
                     maxPair = pair_count.get(key);
                     topPair.clear();
-                    topPair.add(splitWord[i] + TOKEN_DELIMITER);
-                    topPair.add(splitWord[i + 1] + TOKEN_DELIMITER);
+                    topPair.add(splitWord[i]);
+                    topPair.add(splitWord[i + 1]);
                 }
             }
         }
 
         if(topPair.size() > 0) {
-            //System.out.println(String.format("Top pair - <>%s<>%s - %d", topPair.get(0),
-            //        topPair.get(1), pair_count.get(topPair.get(0) + topPair.get(1))));
+            System.out.println(String.format("Top pair - <>%s<>%s - %d", topPair.get(0), topPair.get(1), pair_count.get(topPair.get(0) + topPair.get(1) + TOKEN_DELIMITER)));
         }
         return pair_count;
     }
