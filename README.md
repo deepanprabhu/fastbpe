@@ -1,7 +1,6 @@
 # fastbpe
 Java implementation of [Neural Machine Translation of Rare Words with Subword Units](https://arxiv.org/abs/1508.07909)
 
-Implements Byte-Pair Encoding Tokenization in Java
 fastbpe implements byte pair encoding tokenization in java.
 The library is supposed to be
 
